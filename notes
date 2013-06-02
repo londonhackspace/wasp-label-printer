@@ -104,3 +104,41 @@ FORMFEED
 ~!F
 
 FILES
+
+
+co-ords:
+
+the manual says:
+
+200dpi = 1mm = 8 dots, so 8 dots per mm?
+
+or:
+
+300 dpi : 1mm = 12 dots
+
+a B0007HS00088 qr code is 11mm, so 88 dots.
+
+len	mm
+8	11
+12	11
+16	13
+20	13
+24	13
+28	15
+32	15
+36	15
+40	15
+
+44	17
+48	17
+52	17
+56	17
+60	17
+64	19 <-- too long
+
+
+60 is ok, 64 is too long
+
+
+
+
