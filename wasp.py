@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import serial,os,sys,hexdump,argparse
+import serial,os,sys,hexdump,argparse,textwrap
 
 #
 # ~!A for free space.
@@ -168,6 +168,10 @@ if __name__ == "__main__":
     type=str, nargs=3,
     help='a Do Not Hack Sticker: lhs membership number, name, and email.')
 
+  parser.add_argument('--text',
+    type=str, nargs=1,
+    help='just some text, don\'t forget to quote it!')
+
   args = parser.parse_args()
 
   w = wasp()
@@ -213,5 +217,16 @@ if __name__ == "__main__":
     w.text(width, 5 + 24 + 4, name)
     w.text(width, 5 + ((24 + 4) * 2), email)
     w.s.write("PRINT 1\n")
-
+  elif args.text:
+    text = args.text[0]
+    wrapper = textwrap.TextWrapper(width=27, expand_tabs=False)
+    tbits = wrapper.wrap(text)
+    w.s.write("CLS\n")
+    x = 5
+    for t in tbits:
+      print x
+      w.text(5, x, t)
+      x = x + 22
+    w.s.write("PRINT 1\n")
+    
   w.close()
