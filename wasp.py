@@ -129,9 +129,18 @@ Environment Temperature over range (option)
     self.s.write(comm)
     self.s.write("PRINT 1\n")
 
-  def text(self, x, y, text):
-    # font 3 is 16 x 24
-    comm = "TEXT %d,%d,\"3\",0,1,1,\"%s\"\n" % (x,y, text)
+  def text(self, x, y, text, font=3):
+    # fonts:
+    # 1 8 x 12
+    # 2 12 x 20
+    # 3 16 x 24 <- default
+    # 4 24 x 32
+    # 5 32 x 48
+    # 6 14 x 19	ocr-b
+    # 7 21 x 27 ocr-b
+    # 8 14 x 25 ocr-a
+    # ROMAN.TTF Roman True Type Font
+    comm = "TEXT %d,%d,\"%d\",0,1,1,\"%s\"\n" % (x, y, font, text)
     self.s.write(comm)
 
   def close(self):
@@ -172,6 +181,10 @@ if __name__ == "__main__":
     type=str, nargs=1,
     help='just some text, don\'t forget to quote it!')
 
+  parser.add_argument('--twotext',
+    type=str, nargs=2,
+    help='a title and some text, don\'t forget to quote them!')
+
   args = parser.parse_args()
 
   w = wasp()
@@ -180,7 +193,6 @@ if __name__ == "__main__":
     w.setup()
 
   print args
-  print args.upload    
 
   if args.upload:
     file = args.upload
@@ -226,6 +238,19 @@ if __name__ == "__main__":
     for t in tbits:
       print x
       w.text(5, x, t)
+      x = x + 22
+    w.s.write("PRINT 1\n")
+  elif args.twotext:
+    title = args.twotext[0]
+    text = args.twotext[1]
+    wrapper = textwrap.TextWrapper(width=27, expand_tabs=False)
+    tbits = wrapper.wrap(text)
+    w.s.write("CLS\n")
+    w.text(5, 5, title, 5)
+    x = 5 + 48 +10
+    for t in tbits:
+      print x
+      w.text(5, x, t, 7)
       x = x + 22
     w.s.write("PRINT 1\n")
     
