@@ -153,6 +153,9 @@ Environment Temperature over range (option)
   def email_to_qr(self, email):
     return "MATMSG:TO:%s;;" % (email)
 
+  def url_to_qr(self, url, title):
+    return "MEBKM:TITLE:%s;URL:%s;;" % (title, url)
+
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='Talk to a WASP WPL305.')
   
@@ -184,6 +187,10 @@ if __name__ == "__main__":
   parser.add_argument('--twotext',
     type=str, nargs=2,
     help='a title and some text, don\'t forget to quote them!')
+
+  parser.add_argument('--urlnametext',
+    type=str, nargs=3,
+    help='a url (will be a qrcode), a title and some text, don\'t forget to quote them!')
 
   args = parser.parse_args()
 
@@ -251,6 +258,26 @@ if __name__ == "__main__":
     for t in tbits:
       print x
       w.text(5, x, t, 7)
+      x = x + 22
+    w.s.write("PRINT 1\n")
+  elif args.urlnametext:
+    url = args.urlnametext[0]
+    title = args.urlnametext[1]
+    text = args.urlnametext[2]
+    qrtext = w.url_to_qr(url, title)
+    qrwidth = w.qr_width(qrtext)
+    
+    # do something with font size to get right text width
+    wrapper = textwrap.TextWrapper(width=20, expand_tabs=False)
+    tbits = wrapper.wrap(text)
+
+    w.s.write("CLS\n")
+    w.qr_code(qrtext)
+    w.text(5 + qrwidth + 5, 5, title, 5)
+    x = 5 + 48 +10
+    for t in tbits:
+      print x
+      w.text(5 + qrwidth + 5, x, t, 7)
       x = x + 22
     w.s.write("PRINT 1\n")
     
