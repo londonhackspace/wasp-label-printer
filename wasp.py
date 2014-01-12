@@ -157,9 +157,9 @@ Environment Temperature over range (option)
     return "MEBKM:TITLE:%s;URL:%s;;" % (title, url)
 
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description='Talk to a WASP WPL305.')
+  parser = argparse.ArgumentParser(description='Talk to a WASP WPL305 label printer.')
   
-  parser.add_argument('--upload', type=str, nargs=1,
+  parser.add_argument('--upload', type=str, nargs=1, metavar=('<filename>'),
     help='a bitmap (.bmp or .pcx, 1bpp) to upload')
 
   parser.add_argument('--list', action='store_true',
@@ -169,27 +169,27 @@ if __name__ == "__main__":
     help='Initialise the printer, use after power cycle or ink/paper change')
 
   parser.add_argument('--lhs',
-    type=str, nargs=1,
+    type=str, nargs=1, metavar=('<membership no.>'),
     help='an lhs membership number, produces a sticker with a qr code')
 
   parser.add_argument('--lhs-long',
-    type=str, nargs=3,
+    type=str, nargs=3, metavar=('<membership no.>', '<name>', '<url>'),
     help='an lhs membership number, name, and url, produces a sticker with a 2 qr codes')
 
   parser.add_argument('--lhs-dnh',
-    type=str, nargs=3,
+    type=str, nargs=3, metavar=('<membership no.>', '<name>', '<email>'),
     help='a Do Not Hack Sticker: lhs membership number, name, and email.')
 
   parser.add_argument('--text',
-    type=str, nargs=1,
+    type=str, nargs=1, metavar=('<text>'),
     help='just some text, don\'t forget to quote it!')
 
   parser.add_argument('--twotext',
-    type=str, nargs=2,
+    type=str, nargs=2, metavar=('<title>', '<text>'),
     help='a title and some text, don\'t forget to quote them!')
 
   parser.add_argument('--urlnametext',
-    type=str, nargs=3,
+    type=str, nargs=3, metavar=('<url>', '<title>', '<text>'),
     help='a url (will be a qrcode), a title and some text, don\'t forget to quote them!')
 
   args = parser.parse_args()
