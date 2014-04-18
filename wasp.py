@@ -172,9 +172,9 @@ if __name__ == "__main__":
     type=str, nargs=1, metavar=('<membership no.>'),
     help='an lhs membership number, produces a sticker with a qr code')
 
-  parser.add_argument('--lhs-long',
-    type=str, nargs=3, metavar=('<membership no.>', '<name>', '<url>'),
-    help='an lhs membership number, name, and url, produces a sticker with a 2 qr codes')
+#  parser.add_argument('--lhs-long',
+#    type=str, nargs=3, metavar=('<membership no.>', '<name>', '<url>'),
+#    help='an lhs membership number, name, and url, produces a sticker with a 2 qr codes')
 
   parser.add_argument('--lhs-dnh',
     type=str, nargs=3, metavar=('<membership no.>', '<name>', '<email>'),
