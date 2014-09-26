@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import serial,os,sys,hexdump,argparse,textwrap
+import serial,os,sys,hexdump,argparse,textwrap,time
 
 #
 # ~!A for free space.
@@ -11,6 +11,12 @@ class wasp:
     self.dev = dev
     self.s = serial.Serial(dev, 9600)
     self.status()
+    if self.s.inWaiting() > 0:
+      s = ''
+      while self.s.inWaiting() > 0:
+        s += self.s.read(1)
+        time.sleep(0.1)
+      print s
   
   def setup(self):
     # starts at 9600 8 n 1
@@ -19,24 +25,43 @@ class wasp:
     # we might want to change reference
     # CODEPAGE 850 is
     # 8 BIT MODE, MULTILINGUAL
-    init = """
-SET CUTTER BATCH
-SET GAP 16
-SIZE 57 mm, 19 mm
-GAP 3 mm,0
-SPEED 2   
-DENSITY 7 
+    #
+    # old stickers: 
+    #
+    # SIZE 57 mm, 19 mm
+    # GAP 3 mm,0
+    #
+    init = """SET CUTTER BATCH
+SET GAP 8
+SET RIBBON OFF
+SIZE 101 mm, 101 mm
+GAP 4 mm,0
+SPEED 2
+DENSITY 7
 DIRECTION 1
 REFERENCE 10,10
 COUNTRY 044
 CODEPAGE BRI
 CODEPAGE 850
 HOME
-CLS 
+CLS
 """
-    init = init.split()
+    init = init.split("\n")
     for i in init:
       self.s.write(i + "\n")
+      print i
+      time.sleep(0.01)
+      if self.s.inWaiting() > 0:
+        s = ''
+        while self.s.inWaiting() > 0:
+          s += self.s.read(1)
+        print s
+
+    if self.s.inWaiting() > 0:
+      s = ''
+      while self.s.inWaiting() > 0:
+        s += self.s.read(1)
+      print s
 
   def status(self):
     self.s.write('\x1b!?')
