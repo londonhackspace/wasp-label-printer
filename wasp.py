@@ -17,6 +17,17 @@ class wasp:
         s += self.s.read(1)
         time.sleep(0.1)
       print s
+
+    self.fonts = {
+      1 : {"width": 8, "height": 12},
+      2 : {"width": 12, "height": 20},
+      3 : {"width": 16, "height": 24}, # default
+      4 : {"width": 24, "height": 32},
+      5 : {"width": 32, "height": 48},
+      6 : {"width": 14, "height": 19}, # ocr-b
+      7 : {"width": 21, "height": 27}, # ocr-b
+      8 : {"width": 14, "height": 25}, # ocr-a
+    }
   
   def setup(self):
     # starts at 9600 8 n 1
@@ -122,14 +133,13 @@ Environment Temperature over range (option)
 #  s.flush()
 #  s.write("DOWNLOAD \"DATA2\",10,ABCDEFGHIJ")
 
-  def qr_code(self,qr):
-    if len(qr) > 60:
-      raise RuntimeError, "qr code too long"
-    qr = "QRCODE 5,5,M,4,M,0,M2,S7,\"B%04d%s\"" % (len(qr), qr)
+  def qr_code(self, qr, x=5, y=5):
+    qr = "QRCODE %d,%d,M,4,M,0,M2,S7,\"B%04d%s\"" % (x, y, len(qr), qr)
     self.s.write(qr + "\n")
 
   def qr_width(self, qr):
     # return the width in dots of a qr code.
+    # XXX needs to work for longer qr codes now!
     width = 11
     if len(qr) >= 16:
       width = 13
@@ -158,7 +168,7 @@ Environment Temperature over range (option)
     # fonts:
     # 1 8 x 12
     # 2 12 x 20
-    # 3 16 x 24 <- default
+    # 3 16 x 24 <- default, 2mm wide
     # 4 24 x 32
     # 5 32 x 48
     # 6 14 x 19	ocr-b
@@ -167,6 +177,15 @@ Environment Temperature over range (option)
     # ROMAN.TTF Roman True Type Font
     comm = "TEXT %d,%d,\"%d\",0,1,1,\"%s\"\n" % (x, y, font, text)
     self.s.write(comm)
+
+  def name_value(self, name, value, x, y):
+    # prints
+    # name: value
+    # returns: the y co-ord for the next whatever.
+    self.text(x, y, name)
+    self.text(x + (self.fonts[3]["width"] * len(name)) + 5, y, value)
+    
+    return y + self.fonts[3]["height"] + 5
 
   def close(self):
     print "bye!"
@@ -224,7 +243,16 @@ if __name__ == "__main__":
   if args.init:
     w.setup()
 
-  print args
+#  print args
+
+  # was 27 for the old stickers.
+  # for font 3
+  width_in_chars = 45
+  #
+  # 8 dots per mm at 200dpi
+  # we are at 200dpi, dunno if setting or printer model specific
+  #
+  # 12 dots per mm at 300dpi <- not us?
 
   if args.upload:
     file = args.upload
@@ -241,29 +269,54 @@ if __name__ == "__main__":
       id = args.lhs[0]
     w.qr_and_text(id, id)
   elif args.lhs_dnh:
-    id = None
+    id = args.lhs_dnh[0]
     try:
-      id = int(args.lhs_dnh[0])
-      id = "HS%05d" % (id)
+      _ = int(id)
     except ValueError:
-      id = args.lhs_dnh[0]
+      print "id should be a number, not " + id
+      exit(1)
     name = args.lhs_dnh[1]
     email = args.lhs_dnh[2]
 
     w.s.write("CLS\n")
-    w.qr_code(w.email_to_qr(email))
+
+    # as we go down we will increase this
+    # (0,0 is top right)
+    y = 5
+
+    # start with the title
+    title = "Do Not Hack!"
+
+    # in dots
+    t_width = w.fonts[5]["width"] * len(title)
+    t_pos = (((101 * 8) - 10) - t_width) / 2
+    w.text(5 + t_pos, y, "Do Not Hack.", 5)
+
+    y += w.fonts[5]["height"] + 5
+
+    y = w.name_value("Name:", name, 5, y)
+
+    # profile url
+    profile = "https://london.hackspace.org.uk/members/profile.php?id=" + id
+    profile_qr = w.url_to_qr(profile, "Profile")
+    w.qr_code(profile_qr, 5, y)
+    width = w.qr_width(profile_qr)
+    y += width + 5
+
+    y = w.name_value("Email:", email, 5, y)
+
+    w.qr_code(w.email_to_qr(email), 5, y)
     width = w.qr_width(w.email_to_qr(email))
-    print width, len(w.email_to_qr(email))
-    width += 2
-    # with this font max width is ~ 20 chars.
-    # XXX zoom font if more room
-    w.text(width, 5, "Do Not Hack.")
-    w.text(width, 5 + 24 + 4, name)
-    w.text(width, 5 + ((24 + 4) * 2), email)
+
+    y += width + 5
+
+    y = w.name_value("Estimated Completion Date:", "?", 5, y)
+    y = w.name_value("Tell us more about it:", "", 5, y)
+    
     w.s.write("PRINT 1\n")
   elif args.text:
     text = args.text[0]
-    wrapper = textwrap.TextWrapper(width=27, expand_tabs=False)
+    wrapper = textwrap.TextWrapper(width=width_in_chars, expand_tabs=False)
     tbits = wrapper.wrap(text)
     w.s.write("CLS\n")
     x = 5
@@ -275,7 +328,7 @@ if __name__ == "__main__":
   elif args.twotext:
     title = args.twotext[0]
     text = args.twotext[1]
-    wrapper = textwrap.TextWrapper(width=27, expand_tabs=False)
+    wrapper = textwrap.TextWrapper(width=width_in_chars, expand_tabs=False)
     tbits = wrapper.wrap(text)
     w.s.write("CLS\n")
     w.text(5, 5, title, 5)
@@ -293,7 +346,10 @@ if __name__ == "__main__":
     qrwidth = w.qr_width(qrtext)
     
     # do something with font size to get right text width
-    wrapper = textwrap.TextWrapper(width=20, expand_tabs=False)
+    total_width = (101 * 8) - 10 # 101mm * 8 dots per mm, - 5dots at the edges
+    text_space = total_width - (qrwidth + 5)
+    text_width = text_space / 21 # for font 7, 21 dots wide
+    wrapper = textwrap.TextWrapper(width=text_width, expand_tabs=False)
     tbits = wrapper.wrap(text)
 
     w.s.write("CLS\n")
