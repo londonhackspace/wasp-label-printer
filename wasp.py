@@ -165,6 +165,7 @@ Environment Temperature over range (option)
     self.qr_code(qr)
     width = self.qr_width(qr)
 #    comm = "TEXT %d,5,\"8\",0,2,2,\"%s\"\n" % (width, text)
+    text = text.replace('"', '\\"')
     comm = "TEXT %d,5,\"3\",0,1,1,\"%s\"\n" % (width, text)
     print comm
     self.s.write(comm)
@@ -181,6 +182,7 @@ Environment Temperature over range (option)
     # 7 21 x 27 ocr-b
     # 8 14 x 25 ocr-a
     # ROMAN.TTF Roman True Type Font
+    text = text.replace('"', '\\"')
     comm = "TEXT %d,%d,\"%d\",0,1,1,\"%s\"\n" % (x, y, font, text)
     self.s.write(comm)
 
@@ -189,6 +191,7 @@ Environment Temperature over range (option)
     # name: value
     # returns: the y co-ord for the next whatever.
     self.text(x, y, name)
+    self.s.write("BAR %d,%d,%d,1\n" % (x, y + self.fonts[3]["height"], self.fonts[3]["width"] * len(name)))
     self.text(x + (self.fonts[3]["width"] * len(name)) + 5, y, value)
     
     return y + self.fonts[3]["height"] + 5
@@ -199,13 +202,15 @@ Environment Temperature over range (option)
     # wrapped paragraph
     # returns: the y co-ord for the next whatever.
     self.text(x, y, name)
-    y = y + self.fonts[3]["height"] + 5
+    y = y + self.fonts[3]["height"]
+    self.s.write("BAR %d,%d,%d,1\n" % (x, y, self.fonts[3]["width"] * len(name)))
+    y = y + 5
     
     wrapper = textwrap.TextWrapper(width=self.width_in_chars, expand_tabs=False)
     tbits = wrapper.wrap(para)
     
     for t in tbits:
-      self.text(x, y, para)
+      self.text(x, y, t)
       y = y + self.fonts[3]["height"] + 5
     
     return y # + self.fonts[3]["height"] + 5
@@ -294,6 +299,63 @@ class lhsStickers:
     y = w.name_value("Estimated Completion Date:", completion, 5, y)
     y = w.name_value("Tell us more about it:", more, 5, y)
     
+    w.s.write("PRINT 1\n")
+
+  def lhs_dnh_new(self, storage_id, owner, name, completion, extention, more_info):
+    #
+    # needs:
+    # 
+    # title: Do not hack
+    #
+    # Project name
+    # Owner name
+    # estimated completion date
+    # days maximum time extention
+    # qrcode: "https://london.hackspace.org.uk/storage/" + storage_id
+    w = self.wasp
+
+    w.s.write("CLS\n")
+
+    # as we go down we will increase this
+    # (0,0 is top right)
+    y = 5
+
+    # start with the title
+    title = "Do Not Hack!"
+
+    # in dots
+    t_width = w.fonts[5]["width"] * len(title)
+    t_pos = (((101 * 8) - 10) - t_width) / 2
+    w.text(5 + t_pos, y, "Do Not Hack.", 5)
+
+    y += w.fonts[5]["height"] + 10
+
+    y = w.name_value("Project:", name, 5, y)
+    y = y+5
+    y = w.name_value("Owner:", owner, 5, y)
+    y = y+5
+    y = w.name_value("Estimated Completion Date:", completion, 5, y)
+    y = y+5
+    y = w.name_value("Maximum time extension (days):", extention, 5, y)
+    y = y+5
+
+    y = w.name_para("More info:", more_info, 5, y)
+    y = y+5
+
+    y = w.name_value("Storage id:", storage_id, 5, y)
+    y = y+5
+
+    storage = "https://london.hackspace.org.uk/storage/" + storage_id
+
+    y = w.name_para("Storage url:", storage, 5, y)
+    y = y+5
+        
+    # storage request url
+    storage_qr = w.url_to_qr(storage, "Storage")
+    w.qr_code(storage_qr, 5, y)
+    width = w.qr_width(storage_qr)
+    y += width + 10
+
     w.s.write("PRINT 1\n")
 
   def text(self, text):
@@ -387,6 +449,9 @@ if __name__ == "__main__":
     type=str, nargs=1, metavar=('<port>'),
     help='The serial port to use')
 
+  parser.add_argument('--fonts', action='store_true',
+    help='Print a font test')
+
   args = parser.parse_args()
 
   if args.port:
@@ -417,5 +482,24 @@ if __name__ == "__main__":
     s.twotext(args.twotext[0], args.twotext[1])
   elif args.urlnametext:
     s.urlnametext(args.urlnametext[0], args.urlnametext[1], args.urlnametext[2])
+  elif args.fonts:
+    t = "ABCDabcd1234?;!@"
+    x = 5
+    y = 5
+    w.s.write("CLS\n")
+    for f in w.fonts.keys():
+      w.text(x, y, str(f) + " : " + t, f) 
+      y = y + w.fonts[f]["height"] + 10
+
+    f = "ROMAN.TTF"
+    comm = "TEXT %d,%d,\"%s\",0,12,12,\"%s\"\n" % (x, y, "ROMAN.TTF", str(f) + " : " + t)
+    w.s.write(comm)
+
+    y += 32
+    f = 0
+    comm = "TEXT %d,%d,\"%s\",0,12,12,\"%s\"\n" % (x, y, str(f), str(f) + " : " + t)
+    w.s.write(comm)
     
+    w.s.write("PRINT 1\n")
+
   w.close()
