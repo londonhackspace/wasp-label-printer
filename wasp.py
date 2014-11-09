@@ -216,6 +216,16 @@ Environment Temperature over range (option)
     
     return y # + self.fonts[3]["height"] + 5
 
+  def para(self, text, x, y):
+    wrapper = textwrap.TextWrapper(width=self.width_in_chars, expand_tabs=False)
+    tbits = wrapper.wrap(text)
+    
+    for t in tbits:
+      self.text(x, y, t)
+      y = y + self.fonts[3]["height"] + 5
+    
+    return y + self.fonts[3]["height"] + 5
+
   def close(self):
     print "bye!"
     if self.s.inWaiting() > 0:
@@ -277,7 +287,7 @@ class lhsStickers:
     # in dots
     t_width = w.fonts[5]["width"] * len(title)
     t_pos = (((101 * 8) - 10) - t_width) / 2
-    w.text(5 + t_pos, y, "Do Not Hack.", 5)
+    w.text(5 + t_pos, y, title, 5)
 
     y += w.fonts[5]["height"] + 5
 
@@ -360,7 +370,34 @@ class lhsStickers:
     w.s.write("PRINT 1\n")
 
   def lhs_nod(self, date):
-    pass
+    w = self.wasp
+    w.s.write("CLS\n")
+    y = 5
+    x = 5
+    title = "* Notice of Disposal *"
+
+    t_width = w.fonts[5]["width"] * len(title)
+    t_pos = (((101 * 8) - 10) - t_width) / 2
+    w.text(5 + t_pos, y, title, 5)
+
+    y += w.fonts[5]["height"] * 2
+
+    text = ("This item is to be treated as if it is in the 3 week bin "
+            "process due to not having a completed Do Not Hack "
+            "sticker. See the wiki for details http://hack.rs/wiki")
+    y = w.para(text, x, y)
+    
+    text = ("Please read the rules regarding storing items in the "
+            "hackspace. http://hack.rs/rules")
+    y = w.para(text, x, y)
+
+    text = ("Any questions? - contact IRC http://hack.rs/irc"
+            "or the mailing list. http://hack.rs/list")
+    y = w.para(text, x, y)
+
+    w.name_para("Date this sticker was applied:", date, x, y)
+
+    w.s.write("PRINT 1\n")
 
   def lhs_hackme(self, donor_id, name, dispose, info):
     pass
