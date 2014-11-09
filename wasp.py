@@ -187,15 +187,15 @@ Environment Temperature over range (option)
     comm = "TEXT %d,%d,\"%d\",0,1,1,\"%s\"\n" % (x, y, font, text)
     self.s.write(comm)
 
-  def name_value(self, name, value, x, y):
+  def name_value(self, name, value, x, y, font = 3):
     # prints
     # name: value
     # returns: the y co-ord for the next whatever.
-    self.text(x, y, name)
-    self.s.write("BAR %d,%d,%d,1\n" % (x, y + self.fonts[3]["height"], self.fonts[3]["width"] * len(name)))
-    self.text(x + (self.fonts[3]["width"] * len(name)) + 5, y, value)
+    self.text(x, y, name, font)
+    self.s.write("BAR %d,%d,%d,1\n" % (x, y + self.fonts[font]["height"], self.fonts[font]["width"] * len(name)))
+    self.text(x + (self.fonts[font]["width"] * len(name)) + 5, y, value, font)
     
-    return y + self.fonts[3]["height"] + 5
+    return y + (self.fonts[font]["height"] * 2) + 5
 
   def name_para(self, name, para, x, y):
     # prints
@@ -214,7 +214,7 @@ Environment Temperature over range (option)
       self.text(x, y, t)
       y = y + self.fonts[3]["height"] + 5
     
-    return y # + self.fonts[3]["height"] + 5
+    return y + self.fonts[3]["height"] + 5
 
   def para(self, text, x, y):
     wrapper = textwrap.TextWrapper(width=self.width_in_chars, expand_tabs=False)
@@ -225,6 +225,15 @@ Environment Temperature over range (option)
       y = y + self.fonts[3]["height"] + 5
     
     return y + self.fonts[3]["height"] + 5
+
+  # always at the top and centered
+  def title(self, title):
+    y = 5
+    t_width = self.fonts[5]["width"] * len(title)
+    t_pos = (((101 * 8) - 10) - t_width) / 2
+    self.text(5 + t_pos, y, title, 5)
+
+    return y + self.fonts[5]["height"] * 2
 
   def close(self):
     print "bye!"
@@ -332,34 +341,18 @@ class lhsStickers:
     y = 5
 
     # start with the title
-    title = "Do Not Hack!"
-
-    # in dots
-    t_width = w.fonts[5]["width"] * len(title)
-    t_pos = (((101 * 8) - 10) - t_width) / 2
-    w.text(5 + t_pos, y, "Do Not Hack.", 5)
-
-    y += w.fonts[5]["height"] + 10
+    y = w.title("Do Not Hack!")
 
     y = w.name_value("Project:", name, 5, y)
-    y = y+5
     y = w.name_value("Owner:", owner, 5, y)
-    y = y+5
     y = w.name_value("Estimated Completion Date:", completion, 5, y)
-    y = y+5
     y = w.name_value("Maximum time extension (days):", extention, 5, y)
-    y = y+5
-
     y = w.name_para("More info:", more_info, 5, y)
-    y = y+5
-
     y = w.name_value("Storage id:", storage_id, 5, y)
-    y = y+5
 
     storage = "https://london.hackspace.org.uk/storage/" + storage_id
 
     y = w.name_para("Storage url:", storage, 5, y)
-    y = y+5
         
     # storage request url
     storage_qr = w.url_to_qr(storage, "Storage")
@@ -372,15 +365,8 @@ class lhsStickers:
   def lhs_nod(self, date):
     w = self.wasp
     w.s.write("CLS\n")
-    y = 5
     x = 5
-    title = "* Notice of Disposal *"
-
-    t_width = w.fonts[5]["width"] * len(title)
-    t_pos = (((101 * 8) - 10) - t_width) / 2
-    w.text(5 + t_pos, y, title, 5)
-
-    y += w.fonts[5]["height"] * 2
+    y = w.title("* Notice of Disposal *")
 
     text = ("This item is to be treated as if it is in the 3 week bin "
             "process due to not having a completed Do Not Hack "
@@ -399,15 +385,57 @@ class lhsStickers:
 
     w.s.write("PRINT 1\n")
 
-  def lhs_hackme(self, donor_id, name, dispose, info):
-    pass
+  def lhs_hackme(self, donor_id, name, email, dispose, info):
+    w = self.wasp
+    w.s.write("CLS\n")
+    y = 5
+    x = 5
+    y = w.title("* Hack Me *")
 
-  def lhs_fixme(self, name, reporter_id, reporter_name, info):
-    pass
+    y = w.name_para("Info:", info, x, y)
+    y = w.name_value("Donor:", name, x, y)
+    y = w.name_value("Email:", email, x, y)
+
+    # XXX qrcode to donor profile?
+
+    y = w.name_value("Dispose By:", dispose, x, y)
+    
+    w.s.write("PRINT 1\n")
+    
+  def lhs_fixme(self, name, reporter_id, reporter_name, reporter_email, info):
+    w = self.wasp
+    w.s.write("CLS\n")
+    y = 5
+    x = 5
+    y = w.title("** Fix Me **")
+
+    y = w.name_para("Name:", name, x, y)
+    y = w.name_value("Reporter:", reporter_name, x, y)
+    y = w.name_value("Email:", reporter_email, x, y)
+
+    # XXX qrcode to reporter profile?
+
+    y = w.name_para("Why do I need Fixing? Fault symptoms?:", info, x, y)
+    
+    w.s.write("PRINT 1\n")
 
   def lhs_box(self, owner_id, name):
-    pass
+    w = self.wasp
+    w.s.write("CLS\n")
+    y = 5
+    x = 5
+    y = w.title(name)
 
+    y = w.name_value("Member ID:", "HS%05d" % (int(owner_id)), x, y, 4)
+    
+    profile_url = "https://london.hackspace.org.uk/members/profile.php?id=" + str(owner_id)
+    profile_qr = w.url_to_qr(profile_url, "Profile")
+    w.qr_code(profile_qr, 5, y)
+    width = w.qr_width(profile_qr)
+    y += width + 5
+
+    w.s.write("PRINT 1\n")
+    
   def text(self, text):
     w = self.wasp
     wrapper = textwrap.TextWrapper(width=w.width_in_chars, expand_tabs=False)

@@ -123,24 +123,24 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
       s.lhs_nod(date)
 
     elif path == '/print/hackme':
-      check_keys(data, ('donor_name', 'donor_id', 'dispose_date', 'info'))
+      check_keys(data, ('donor_name', 'donor_id', 'donor_email', 'dispose_date', 'more_info'))
       # the printer only does code page 850
       # so re-encode all the data just in case
       for k in data.keys():
         if type(data[k]) == type(u"string"):
           data[k] = data[k].encode('cp850', 'replace')
 
-      s.lhs_hackme(data['donor_id'], data['donor_name'], data['dispose_date'], data['info'])
+      s.lhs_hackme(data['donor_id'], data['donor_name'], data['donor_email'], data['dispose_date'], data['more_info'])
       
     elif path == '/print/fixme':
-      check_keys(data, ('name', 'reporter_id', 'reporter_name', 'info'))
+      check_keys(data, ('name', 'reporter_id', 'reporter_name', 'reporter_email', 'more_info'))
       # the printer only does code page 850
       # so re-encode all the data just in case
       for k in data.keys():
         if type(data[k]) == type(u"string"):
           data[k] = data[k].encode('cp850', 'replace')
 
-      s.lhs_fixme(data['name'], data['reporter_id'], data['reporter_name'], data['info'])
+      s.lhs_fixme(data['name'], data['reporter_id'], data['reporter_name'], data['reporter_email'], data['more_info'])
 
     elif path == '/print/box':
       check_keys(data, ('owner_id', 'owner_name'))
