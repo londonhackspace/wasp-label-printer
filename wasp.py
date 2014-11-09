@@ -23,11 +23,17 @@ class wasp:
       2 : {"width": 12, "height": 20},
       3 : {"width": 16, "height": 24}, # default
       4 : {"width": 24, "height": 32},
-      5 : {"width": 32, "height": 48},
+      5 : {"width": 32, "height": 48}, # big and good for titles.
       6 : {"width": 14, "height": 19}, # ocr-b
-      7 : {"width": 21, "height": 27}, # ocr-b
+      7 : {"width": 21, "height": 27}, # ocr-b, ugly with wide spacing.
       8 : {"width": 14, "height": 25}, # ocr-a
     }
+    # was 27 for the old stickers.
+    # for font 3
+    self.width_in_chars = 45
+    #
+    # 8 dots per mm at 200dpi
+    # we are at 200dpi, dunno if setting or printer model specific
   
   def setup(self):
     # starts at 9600 8 n 1
@@ -187,6 +193,23 @@ Environment Temperature over range (option)
     
     return y + self.fonts[3]["height"] + 5
 
+  def name_para(self, name, para, x, y):
+    # prints
+    # name
+    # wrapped paragraph
+    # returns: the y co-ord for the next whatever.
+    self.text(x, y, name)
+    y = y + self.fonts[3]["height"] + 5
+    
+    wrapper = textwrap.TextWrapper(width=self.width_in_chars, expand_tabs=False)
+    tbits = wrapper.wrap(para)
+    
+    for t in tbits:
+      self.text(x, y, para)
+      y = y + self.fonts[3]["height"] + 5
+    
+    return y # + self.fonts[3]["height"] + 5
+
   def close(self):
     print "bye!"
     if self.s.inWaiting() > 0:
@@ -199,6 +222,130 @@ Environment Temperature over range (option)
 
   def url_to_qr(self, url, title):
     return "MEBKM:TITLE:%s;URL:%s;;" % (title, url)
+
+class lhsStickers:
+  def __init__(self, wasp):
+    self.wasp = wasp
+
+  def lhs(self, id):
+    try:
+      oid = int(id)
+      oid = "HS%05d" % (oid)
+    except ValueError:
+      oid = id
+    self.wasp.qr_and_text(id, id)
+  
+  def lhs_dnh(self, id, owner, email, completion, more):
+    #
+    # needs:
+    # 
+    # title: Do not hack
+    #
+    # Project name
+    # Owner name
+    # estimated completion date
+    # days maximum time extention
+    # qrcode: "https://london.hackspace.org.uk/storage/" + storage_id
+    # more info
+    #
+    # email?
+    # phone number?
+    #
+    w = self.wasp
+    try:
+      _ = int(id)
+    except ValueError:
+      # XXX logging + errors
+      print "id should be a number, not " + id
+      exit(1)
+
+    w.s.write("CLS\n")
+
+    # as we go down we will increase this
+    # (0,0 is top right)
+    y = 5
+
+    # start with the title
+    title = "Do Not Hack!"
+
+    # in dots
+    t_width = w.fonts[5]["width"] * len(title)
+    t_pos = (((101 * 8) - 10) - t_width) / 2
+    w.text(5 + t_pos, y, "Do Not Hack.", 5)
+
+    y += w.fonts[5]["height"] + 5
+
+    y = w.name_value("Name:", owner, 5, y)
+
+    # profile url
+    profile = "https://london.hackspace.org.uk/members/profile.php?id=" + id
+    profile_qr = w.url_to_qr(profile, "Profile")
+    w.qr_code(profile_qr, 5, y)
+    width = w.qr_width(profile_qr)
+    y += width + 5
+
+    y = w.name_value("Email:", email, 5, y)
+
+    w.qr_code(w.email_to_qr(email), 5, y)
+    width = w.qr_width(w.email_to_qr(email))
+
+    y += width + 5
+
+    y = w.name_value("Estimated Completion Date:", completion, 5, y)
+    y = w.name_value("Tell us more about it:", more, 5, y)
+    
+    w.s.write("PRINT 1\n")
+
+  def text(self, text):
+    w = self.wasp
+    wrapper = textwrap.TextWrapper(width=w.width_in_chars, expand_tabs=False)
+    tbits = wrapper.wrap(text)
+    w.s.write("CLS\n")
+    y = 5
+    for t in tbits:
+#      print y
+      w.text(5, y, t)
+      y = y + self.fonts[3]["height"] + 5
+    w.s.write("PRINT 1\n")
+
+  def twotext(self, title, text):
+    w = self.wasp
+    wrapper = textwrap.TextWrapper(width=w.width_in_chars, expand_tabs=False)
+    tbits = wrapper.wrap(text)
+    w.s.write("CLS\n")
+    w.text(5, 5, title, 5)
+    y = 5 + w.fonts[5]["height"] + 10
+
+    bodyfont = 3
+
+    for t in tbits:
+#      print y
+      w.text(5, y, t, bodyfont)
+      y = y + w.fonts[bodyfont]["height"] + 5
+    w.s.write("PRINT 1\n")
+
+  def urlnametext(self, url, title, text):
+    w = self.wasp
+    qrtext = w.url_to_qr(url, title)
+    qrwidth = w.qr_width(qrtext)
+    
+    # do something with font size to get right text width
+    total_width = (101 * 8) - 10 # 101mm * 8 dots per mm, - 5dots at the edges
+    text_space = total_width - (qrwidth + 5)
+    text_width = text_space / 21 # for font 7, 21 dots wide
+    wrapper = textwrap.TextWrapper(width=self.text_width, expand_tabs=False)
+    tbits = wrapper.wrap(text)
+
+    w.s.write("CLS\n")
+    w.qr_code(qrtext)
+    w.text(5 + qrwidth + 5, 5, title, 5)
+    x = 5 + 48 +10
+    for t in tbits:
+      print x
+      w.text(5 + qrwidth + 5, x, t, 7)
+      x = x + 22
+    w.s.write("PRINT 1\n")
+  
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='Talk to a WASP WPL305 label printer.')
@@ -221,7 +368,7 @@ if __name__ == "__main__":
 #    help='an lhs membership number, name, and url, produces a sticker with a 2 qr codes')
 
   parser.add_argument('--lhs-dnh',
-    type=str, nargs=3, metavar=('<membership no.>', '<name>', '<email>'),
+    type=str, nargs=5, metavar=('<membership no.>', '<name>', '<email>', '<completion>', '<more info>'),
     help='a Do Not Hack Sticker: lhs membership number, name, and email.')
 
   parser.add_argument('--text',
@@ -236,23 +383,23 @@ if __name__ == "__main__":
     type=str, nargs=3, metavar=('<url>', '<title>', '<text>'),
     help='a url (will be a qrcode), a title and some text, don\'t forget to quote them!')
 
+  parser.add_argument('--port',
+    type=str, nargs=1, metavar=('<port>'),
+    help='The serial port to use')
+
   args = parser.parse_args()
 
-  w = wasp()
+  if args.port:
+    w = wasp(args.port[0])
+  else:
+    w = wasp()
 
   if args.init:
     w.setup()
 
-#  print args
+  s = lhsStickers(w)
 
-  # was 27 for the old stickers.
-  # for font 3
-  width_in_chars = 45
-  #
-  # 8 dots per mm at 200dpi
-  # we are at 200dpi, dunno if setting or printer model specific
-  #
-  # 12 dots per mm at 300dpi <- not us?
+#  print args
 
   if args.upload:
     file = args.upload
@@ -261,105 +408,14 @@ if __name__ == "__main__":
   elif args.list:
     w.list_files()
   elif args.lhs:
-    id = None
-    try:
-      id = int(args.lhs[0])
-      id = "HS%05d" % (id)
-    except ValueError:
-      id = args.lhs[0]
-    w.qr_and_text(id, id)
+    s.lhs(args.lhs[0])
   elif args.lhs_dnh:
-    id = args.lhs_dnh[0]
-    try:
-      _ = int(id)
-    except ValueError:
-      print "id should be a number, not " + id
-      exit(1)
-    name = args.lhs_dnh[1]
-    email = args.lhs_dnh[2]
-
-    w.s.write("CLS\n")
-
-    # as we go down we will increase this
-    # (0,0 is top right)
-    y = 5
-
-    # start with the title
-    title = "Do Not Hack!"
-
-    # in dots
-    t_width = w.fonts[5]["width"] * len(title)
-    t_pos = (((101 * 8) - 10) - t_width) / 2
-    w.text(5 + t_pos, y, "Do Not Hack.", 5)
-
-    y += w.fonts[5]["height"] + 5
-
-    y = w.name_value("Name:", name, 5, y)
-
-    # profile url
-    profile = "https://london.hackspace.org.uk/members/profile.php?id=" + id
-    profile_qr = w.url_to_qr(profile, "Profile")
-    w.qr_code(profile_qr, 5, y)
-    width = w.qr_width(profile_qr)
-    y += width + 5
-
-    y = w.name_value("Email:", email, 5, y)
-
-    w.qr_code(w.email_to_qr(email), 5, y)
-    width = w.qr_width(w.email_to_qr(email))
-
-    y += width + 5
-
-    y = w.name_value("Estimated Completion Date:", "?", 5, y)
-    y = w.name_value("Tell us more about it:", "", 5, y)
-    
-    w.s.write("PRINT 1\n")
+    s.lhs_dnh(lhs_dnh[0], lhs_dnh[1], lhs_dnh[2], lhs_dnh[3], lhs_dnh[4])
   elif args.text:
-    text = args.text[0]
-    wrapper = textwrap.TextWrapper(width=width_in_chars, expand_tabs=False)
-    tbits = wrapper.wrap(text)
-    w.s.write("CLS\n")
-    x = 5
-    for t in tbits:
-      print x
-      w.text(5, x, t)
-      x = x + 22
-    w.s.write("PRINT 1\n")
+    s.text(args.text[0])
   elif args.twotext:
-    title = args.twotext[0]
-    text = args.twotext[1]
-    wrapper = textwrap.TextWrapper(width=width_in_chars, expand_tabs=False)
-    tbits = wrapper.wrap(text)
-    w.s.write("CLS\n")
-    w.text(5, 5, title, 5)
-    x = 5 + 48 +10
-    for t in tbits:
-      print x
-      w.text(5, x, t, 7)
-      x = x + 22
-    w.s.write("PRINT 1\n")
+    s.twotext(args.twotext[0], args.twotext[1])
   elif args.urlnametext:
-    url = args.urlnametext[0]
-    title = args.urlnametext[1]
-    text = args.urlnametext[2]
-    qrtext = w.url_to_qr(url, title)
-    qrwidth = w.qr_width(qrtext)
-    
-    # do something with font size to get right text width
-    total_width = (101 * 8) - 10 # 101mm * 8 dots per mm, - 5dots at the edges
-    text_space = total_width - (qrwidth + 5)
-    text_width = text_space / 21 # for font 7, 21 dots wide
-    wrapper = textwrap.TextWrapper(width=text_width, expand_tabs=False)
-    tbits = wrapper.wrap(text)
-
-    w.s.write("CLS\n")
-    w.qr_code(qrtext)
-    w.text(5 + qrwidth + 5, 5, title, 5)
-    x = 5 + 48 +10
-    for t in tbits:
-      print x
-      w.text(5 + qrwidth + 5, x, t, 7)
-      x = x + 22
-    w.s.write("PRINT 1\n")
+    s.urlnametext(args.urlnametext[0], args.urlnametext[1], args.urlnametext[2])
     
   w.close()
