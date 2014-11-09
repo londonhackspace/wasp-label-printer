@@ -48,6 +48,9 @@ class wasp:
     # SIZE 57 mm, 19 mm
     # GAP 3 mm,0
     #
+    # COUNTRY 044
+    # CODEPAGE BRI
+
     init = """SET CUTTER BATCH
 SET GAP 8
 SET RIBBON OFF
@@ -57,8 +60,6 @@ SPEED 2
 DENSITY 7
 DIRECTION 1
 REFERENCE 10,10
-COUNTRY 044
-CODEPAGE BRI
 CODEPAGE 850
 HOME
 CLS
@@ -357,6 +358,18 @@ class lhsStickers:
     y += width + 10
 
     w.s.write("PRINT 1\n")
+
+  def lhs_nod(self, date):
+    pass
+
+  def lhs_hackme(self, donor_id, name, dispose, info):
+    pass
+
+  def lhs_fixme(self, name, reporter_id, reporter_name, info):
+    pass
+
+  def lhs_box(self, owner_id, name):
+    pass
 
   def text(self, text):
     w = self.wasp

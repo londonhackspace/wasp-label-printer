@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import sys, time, os, json, logging, argparse
-import BaseHTTPServer, urlparse, urllib
+import BaseHTTPServer, urlparse, urllib, socket
 
 from logging.handlers import SysLogHandler
 from wasp import wasp, lhsStickers
@@ -13,6 +13,29 @@ class WaspD:
     logging.info("waspd starting up")
     while True:
       time.sleep(1)
+
+# from
+# http://trac.itek.norut.no/svn/n4c/trunk/HikerDaemon/WebServer.py
+class MyWebServer(BaseHTTPServer.HTTPServer):
+  """
+  Non-blocking, multi-threaded IPv6 enabled web server
+  """
+
+  if socket.has_ipv6:
+    address_family = socket.AF_INET6
+
+  # Override in case python has IPv6 but system does not
+  def __init__(self, server_address, RequestHandlerClass):
+    try:
+      BaseHTTPServer.HTTPServer.__init__(self,
+                                        server_address,
+                                        RequestHandlerClass)
+    except:
+      log.exception("Failed to use IPv6, using IPv4 instead")
+      self.address_family = socket.AF_INET
+      BaseHTTPServer.HTTPServer.__init__(self,
+                                        server_address,
+                                        RequestHandlerClass)
 
 class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
   # Disable logging DNS lookups
@@ -27,15 +50,9 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
     params = urlparse.parse_qs(url.query)
     path = url.path
 
-    logging.info(url)
-    
     path = path.lstrip('/')
     message = urllib.unquote(path).decode('utf8')
-    
-    if message == 'favicon.ico':
-      # Prevent annoying warnings
-      return
-    
+
     self.send_error(404)
     self.end_headers()
     self.wfile.write('hello not there: %s' % message)
@@ -60,20 +77,26 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write('Bad request: %s' % e)
         return
+    else:
+      self.send_error(400)
+      self.end_headers()
+      self.wfile.write('No Content-Length header')
+      return
 
-    ok = False
+    ok = True
+    logging.info(data)
 
-    if path == "/print/dnh":
-      if data:
-        ok = True
-      keys = ('storage_id', 'name', 'ownername', 'completion_date', 'max_extention', 'more_info')
-      valid = True
+    def check_keys(data, keys):
       for k in keys:
         if k not in data:
           self.send_error(400)
           self.end_headers()
           self.wfile.write('Bad request: missing key %s' % k)
           return
+
+    if path == "/print/dnh":
+      keys = ('storage_id', 'name', 'ownername', 'completion_date', 'max_extention', 'more_info')
+      check_keys(data, keys)
       id = False
       try:
         id = int(data['storage_id'])
@@ -82,10 +105,53 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write('Bad request: %s' % e)
         return
+
+      # the printer only does code page 850
+      # so re-encode all the data just in case
+      for k in data.keys():
+        if type(data[k]) == type(u"string"):
+          data[k] = data[k].encode('cp850', 'replace')
         
       # actually print it.
       s.lhs_dnh_new(str(data['storage_id']), data['ownername'], data['name'], data['completion_date'], data['max_extention'], data['more_info'])
       
+    elif path == '/print/nod':
+      # don't actually need any keys
+#      check_keys(data, ('date',))
+#      data['date'] = data['date'].encode('cp850', 'replace')
+      date = time.asctime(time.localtime(time.time())).encode('cp850', 'replace')
+      s.lhs_nod(date)
+
+    elif path == '/print/hackme':
+      check_keys(data, ('donor_name', 'donor_id', 'dispose_date', 'info'))
+      # the printer only does code page 850
+      # so re-encode all the data just in case
+      for k in data.keys():
+        if type(data[k]) == type(u"string"):
+          data[k] = data[k].encode('cp850', 'replace')
+
+      s.lhs_hackme(data['donor_id'], data['donor_name'], data['dispose_date'], data['info'])
+      
+    elif path == '/print/fixme':
+      check_keys(data, ('name', 'reporter_id', 'reporter_name', 'info'))
+      # the printer only does code page 850
+      # so re-encode all the data just in case
+      for k in data.keys():
+        if type(data[k]) == type(u"string"):
+          data[k] = data[k].encode('cp850', 'replace')
+
+      s.lhs_fixme(data['name'], data['reporter_id'], data['reporter_name'], data['info'])
+
+    elif path == '/print/box':
+      check_keys(data, ('owner_id', 'owner_name'))
+      # the printer only does code page 850
+      # so re-encode all the data just in case
+      for k in data.keys():
+        if type(data[k]) == type(u"string"):
+          data[k] = data[k].encode('cp850', 'replace')
+
+      s.lhs_box(data['owner_id'], data['owner_name'])
+
     else:
       self.send_error(404)
       self.end_headers()
@@ -147,8 +213,9 @@ if __name__ == "__main__":
     w = wasp()
 
   s = lhsStickers(w)
-
-  httpd = BaseHTTPServer.HTTPServer(("", 12345), Handler)
+  
+  httpd = MyWebServer(('', 12345), Handler)
+#  BaseHTTPServer.HTTPServer(("::", 12345), Handler)
   httpd.serve_forever()
 
 #  if not args.foreground:
