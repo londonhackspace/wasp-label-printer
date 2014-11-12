@@ -432,10 +432,16 @@ class lhsStickers:
     
     profile_url = "https://london.hackspace.org.uk/members/profile.php?id=" + str(owner_id)
     profile_qr = w.url_to_qr(profile_url, "Profile")
-    w.qr_code(profile_qr, 5, y, 8)
+
     width = w.qr_width(profile_qr)
-    y += (width * 2) + 5
-    w.text(5, y, str(width))
+    width = width * 2 # default qr code has cell_width 4
+
+    x = (795 / 2) - (width / 2)
+
+    w.qr_code(profile_qr, x, y, 8)
+
+#    y += width + 5
+#    w.text(5, y, str(width))
 
     w.s.write("PRINT 1\n")
     
