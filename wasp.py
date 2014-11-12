@@ -140,8 +140,8 @@ Environment Temperature over range (option)
 #  s.flush()
 #  s.write("DOWNLOAD \"DATA2\",10,ABCDEFGHIJ")
 
-  def qr_code(self, qr, x=5, y=5):
-    qr = "QRCODE %d,%d,M,4,M,0,M2,S7,\"B%04d%s\"" % (x, y, len(qr), qr)
+  def qr_code(self, qr, x=5, y=5, cell_width=4):
+    qr = "QRCODE %d,%d,M,%d,M,0,M2,S7,\"B%04d%s\"" % (x, y, cell_width, len(qr), qr)
     self.s.write(qr + "\n")
 
   def qr_width(self, qr):
@@ -226,9 +226,9 @@ Environment Temperature over range (option)
     
     return y + self.fonts[3]["height"] + 5
 
-  # always at the top and centered
-  def title(self, title):
-    y = 5
+  # at the top by default
+  # centered
+  def title(self, title, font=5, y=5):
     t_width = self.fonts[5]["width"] * len(title)
     t_pos = (((101 * 8) - 10) - t_width) / 2
     self.text(5 + t_pos, y, title, 5)
@@ -426,13 +426,16 @@ class lhsStickers:
     x = 5
     y = w.title(name)
 
-    y = w.name_value("Member ID:", "HS%05d" % (int(owner_id)), x, y, 4)
+    y = w.title("HS%05d" % (int(owner_id)), 5, y)
+
+#    y = w.name_value("Member ID:", "HS%05d" % (int(owner_id)), x, y, 4)
     
     profile_url = "https://london.hackspace.org.uk/members/profile.php?id=" + str(owner_id)
     profile_qr = w.url_to_qr(profile_url, "Profile")
-    w.qr_code(profile_qr, 5, y)
+    w.qr_code(profile_qr, 5, y, 8)
     width = w.qr_width(profile_qr)
-    y += width + 5
+    y += (width * 2) + 5
+    w.text(5, y, str(width))
 
     w.s.write("PRINT 1\n")
     
