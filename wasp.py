@@ -259,6 +259,14 @@ class lhsStickers:
     except ValueError:
       oid = id
     self.wasp.qr_and_text(id, id)
+
+  def profile_url(self, id):
+    try:
+      _ = int(id)
+    except ValueError:
+      raise
+    # XXX hack.rs needs to have https
+    return "http://hack.rs/pr/" + id
   
   def lhs_dnh(self, id, owner, email, completion, more):
     #
@@ -303,7 +311,7 @@ class lhsStickers:
     y = w.name_value("Name:", owner, 5, y)
 
     # profile url
-    profile = "https://london.hackspace.org.uk/members/profile.php?id=" + id
+    profile = profile_url(id)
     profile_qr = w.url_to_qr(profile, "Profile")
     w.qr_code(profile_qr, 5, y)
     width = w.qr_width(profile_qr)
@@ -362,7 +370,7 @@ class lhsStickers:
 
     w.s.write("PRINT 1\n")
 
-  def lhs_nod(self, date):
+  def lhs_nod(self, date, id, name, email):
     w = self.wasp
     w.s.write("CLS\n")
     x = 5
@@ -382,6 +390,29 @@ class lhsStickers:
     y = w.para(text, x, y)
 
     w.name_para("Date this sticker was applied:", date, x, y)
+
+    try:
+      _ = int(id)
+    except ValueError:
+      # XXX logging + errors
+      print "id should be a number, not " + id
+      exit(1)
+
+    y = w.name_value("Stuck by:", name, 5, y)
+
+    # profile url
+    profile = profile_url(id)
+    profile_qr = w.url_to_qr(profile, "Profile")
+    w.qr_code(profile_qr, 5, y)
+    width = w.qr_width(profile_qr)
+    y += width + 5
+
+    y = w.name_value("Email:", email, 5, y)
+
+    w.qr_code(w.email_to_qr(email), 5, y)
+    width = w.qr_width(w.email_to_qr(email))
+
+    y += width + 5
 
     w.s.write("PRINT 1\n")
 
@@ -430,7 +461,7 @@ class lhsStickers:
 
 #    y = w.name_value("Member ID:", "HS%05d" % (int(owner_id)), x, y, 4)
     
-    profile_url = "https://london.hackspace.org.uk/members/profile.php?id=" + str(owner_id)
+    profile_url = profile_url(str(owner_id))
     profile_qr = w.url_to_qr(profile_url, "Profile")
 
     width = w.qr_width(profile_qr)
