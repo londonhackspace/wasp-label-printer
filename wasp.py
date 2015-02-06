@@ -29,8 +29,13 @@ class wasp:
       8 : {"width": 14, "height": 25}, # ocr-a
     }
     # was 27 for the old stickers.
-    # for font 3
-    self.width_in_chars = 45
+    # 45 for font 3
+    self.width_in_chars = {
+    1: 90,
+    2: 59,
+    3: 45,
+    6: 52,
+    }
     #
     # 8 dots per mm at 200dpi
     # we are at 200dpi, dunno if setting or printer model specific
@@ -197,34 +202,34 @@ Environment Temperature over range (option)
     
     return y + (self.fonts[font]["height"] * 2) + 5
 
-  def name_para(self, name, para, x, y):
+  def name_para(self, name, para, x, y, font=3):
     # prints
     # name
     # wrapped paragraph
     # returns: the y co-ord for the next whatever.
     self.text(x, y, name)
-    y = y + self.fonts[3]["height"]
-    self.s.write("BAR %d,%d,%d,1\n" % (x, y, self.fonts[3]["width"] * len(name)))
+    y = y + self.fonts[font]["height"]
+    self.s.write("BAR %d,%d,%d,1\n" % (x, y, self.fonts[font]["width"] * len(name)))
     y = y + 5
     
-    wrapper = textwrap.TextWrapper(width=self.width_in_chars, expand_tabs=False)
+    wrapper = textwrap.TextWrapper(width=self.width_in_chars[font], expand_tabs=False)
     tbits = wrapper.wrap(para)
     
     for t in tbits:
       self.text(x, y, t)
-      y = y + self.fonts[3]["height"] + 5
+      y = y + self.fonts[font]["height"] + 5
     
-    return y + self.fonts[3]["height"] + 5
+    return y + self.fonts[font]["height"] + 5
 
-  def para(self, text, x, y):
-    wrapper = textwrap.TextWrapper(width=self.width_in_chars, expand_tabs=False)
+  def para(self, text, x, y, font = 3):
+    wrapper = textwrap.TextWrapper(width=self.width_in_chars[font], expand_tabs=False)
     tbits = wrapper.wrap(text)
     
     for t in tbits:
-      self.text(x, y, t)
-      y = y + self.fonts[3]["height"] + 5
+      self.text(x, y, t, font)
+      y = y + self.fonts[font]["height"] + 5
     
-    return y + self.fonts[3]["height"] + 5
+    return y + self.fonts[font]["height"] + 5
 
   # at the top by default
   # centered
@@ -311,7 +316,7 @@ class lhsStickers:
     y = w.name_value("Name:", owner, 5, y)
 
     # profile url
-    profile = profile_url(id)
+    profile = self.profile_url(id)
     profile_qr = w.url_to_qr(profile, "Profile")
     w.qr_code(profile_qr, 5, y)
     width = w.qr_width(profile_qr)
@@ -371,6 +376,13 @@ class lhsStickers:
     w.s.write("PRINT 1\n")
 
   def lhs_nod(self, date, id, name, email):
+    try:
+      _ = int(id)
+    except ValueError:
+      # XXX logging + errors
+      print "id should be a number, not " + id
+      exit(1)
+
     w = self.wasp
     w.s.write("CLS\n")
     x = 5
@@ -379,40 +391,38 @@ class lhsStickers:
     text = ("This item is to be treated as if it is in the 3 week bin "
             "process due to not having a completed Do Not Hack "
             "sticker. See the wiki for details http://hack.rs/wiki")
-    y = w.para(text, x, y)
+    y = w.para(text, x, y, 2)
     
     text = ("Please read the rules regarding storing items in the "
             "hackspace. http://hack.rs/rules")
-    y = w.para(text, x, y)
+    y = w.para(text, x, y, 2)
 
-    text = ("Any questions? - contact IRC http://hack.rs/irc"
-            "or the mailing list. http://hack.rs/list")
-    y = w.para(text, x, y)
+    text = ("Any questions? - contact IRC: http://hack.rs/irc "
+            "or the mailing list: http://hack.rs/list")
+    y = w.para(text, x, y, 2)
 
-    w.name_para("Date this sticker was applied:", date, x, y)
-
-    try:
-      _ = int(id)
-    except ValueError:
-      # XXX logging + errors
-      print "id should be a number, not " + id
-      exit(1)
-
-    y = w.name_value("Stuck by:", name, 5, y)
+    y = w.para("Date this sticker was applied: " + date, x, y, 2)
+    y = y - w.fonts[3]["height"]
+    y = w.name_value("Stuck by: ", name, x, y, 2)
+    y = y - w.fonts[2]["height"]
+    y = w.name_value("Email: ", email, 5, y, 2)
+    y = y - w.fonts[2]["height"]
 
     # profile url
-    profile = profile_url(id)
+    profile = self.profile_url(id)
     profile_qr = w.url_to_qr(profile, "Profile")
+    oy = y
     w.qr_code(profile_qr, 5, y)
     width = w.qr_width(profile_qr)
-    y += width + 5
+    y += width + 10
 
-    y = w.name_value("Email:", email, 5, y)
-
-    w.qr_code(w.email_to_qr(email), 5, y)
+    w.qr_code(w.email_to_qr(email), 5 + width + 10, oy)
     width = w.qr_width(w.email_to_qr(email))
-
-    y += width + 5
+    
+    if (oy + width + 5 > y):
+      y = oy + width + 5
+    else:
+      y += width + 5
 
     w.s.write("PRINT 1\n")
 
@@ -461,7 +471,7 @@ class lhsStickers:
 
 #    y = w.name_value("Member ID:", "HS%05d" % (int(owner_id)), x, y, 4)
     
-    profile_url = profile_url(str(owner_id))
+    profile_url = self.profile_url(str(owner_id))
     profile_qr = w.url_to_qr(profile_url, "Profile")
 
     width = w.qr_width(profile_qr)
@@ -478,7 +488,7 @@ class lhsStickers:
     
   def text(self, text):
     w = self.wasp
-    wrapper = textwrap.TextWrapper(width=w.width_in_chars, expand_tabs=False)
+    wrapper = textwrap.TextWrapper(width=w.width_in_chars[3], expand_tabs=False)
     tbits = wrapper.wrap(text)
     w.s.write("CLS\n")
     y = 5

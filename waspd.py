@@ -117,10 +117,15 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
       
     elif path == '/print/nod':
       # don't actually need any keys
-#      check_keys(data, ('date',))
-#      data['date'] = data['date'].encode('cp850', 'replace')
-      date = time.asctime(time.localtime(time.time())).encode('cp850', 'replace')
-      s.lhs_nod(date)
+      check_keys(data, ('id','name','email'))
+      # the printer only does code page 850
+      # so re-encode all the data just in case
+      for k in data.keys():
+        if type(data[k]) == type(u"string"):
+          data[k] = data[k].encode('cp850', 'replace')
+
+      date = time.strftime('%a %d/%m/%y', time.localtime(time.time())).encode('cp850', 'replace')
+      s.lhs_nod(date, data['id'], data['name'], data['email'])
 
     elif path == '/print/hackme':
       check_keys(data, ('donor_name', 'donor_id', 'donor_email', 'dispose_date', 'more_info'))
