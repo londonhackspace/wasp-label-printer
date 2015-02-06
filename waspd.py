@@ -206,6 +206,7 @@ if __name__ == "__main__":
   args = parse_args()
 
   set_logger()
+  logging.info("waspd starting up")
 
   if args.port:
     w = wasp(args.port[0])
