@@ -401,6 +401,9 @@ class lhsStickers:
             "or the mailing list: http://hack.rs/list")
     y = w.para(text, x, y, 2)
 
+    text = ("This sticker is not valid until the mailing list has been informed.")
+    y = w.para(text, x, y, 2)
+
     y = w.para("Date this sticker was applied: " + date, x, y, 2)
     y = y - w.fonts[3]["height"]
     y = w.name_value("Stuck by: ", name, x, y, 2)
