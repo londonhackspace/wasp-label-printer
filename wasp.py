@@ -19,7 +19,7 @@ class wasp:
       print s
 
     self.fonts = {
-      1 : {"width": 8, "height": 12},
+      1 : {"width": 10, "height": 12}, # manual says 8, but space between chars makes it 10
       2 : {"width": 12, "height": 20},
       3 : {"width": 16, "height": 24}, # default
       4 : {"width": 24, "height": 32},
@@ -31,7 +31,7 @@ class wasp:
     # was 27 for the old stickers.
     # 45 for font 3
     self.width_in_chars = {
-    1: 90,
+    1: ((101 * 8) + 10) / self.fonts[1]["width"],
     2: 59,
     3: 45,
     6: 52,
@@ -484,9 +484,14 @@ class lhsStickers:
 
     w.qr_code(profile_qr, x, y, 8)
 
-#    y += width + 5
-#    w.text(5, y, str(width))
-
+    text = ("This is a London Hackspace Members box sticker, it is not a valid Do Not Hack sticker.")
+    x = 5
+    # we want this at the bottom
+    lines_per_sticker = (101 * 8) / w.fonts[1]["height"]
+    lines_per_sticker = lines_per_sticker - 4 # should be 2, but be a bit generous
+    y = lines_per_sticker * w.fonts[1]["height"]
+    y = w.para(text, x, y, 1)
+    
     w.s.write("PRINT 1\n")
     
   def text(self, text):
