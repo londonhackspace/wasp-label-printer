@@ -508,7 +508,7 @@ class lhsStickers:
 
   def twotext(self, title, text):
     w = self.wasp
-    wrapper = textwrap.TextWrapper(width=w.width_in_chars, expand_tabs=False)
+    wrapper = textwrap.TextWrapper(width=w.width_in_chars[3], expand_tabs=False)
     tbits = wrapper.wrap(text)
     w.s.write("CLS\n")
     w.text(5, 5, title, 5)
