@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import serial,os,sys,hexdump,argparse,textwrap,time
+import serial,os,sys,hexdump,argparse,textwrap,time,logging
 
 #
 # ~!A for free space.
@@ -171,7 +171,7 @@ Environment Temperature over range (option)
     self.qr_code(qr)
     width = self.qr_width(qr)
 #    comm = "TEXT %d,5,\"8\",0,2,2,\"%s\"\n" % (width, text)
-    text = text.replace('"', '\\"')
+    text = text.replace('"', '\\["]')
     comm = "TEXT %d,5,\"3\",0,1,1,\"%s\"\n" % (width, text)
     print comm
     self.s.write(comm)
@@ -188,7 +188,7 @@ Environment Temperature over range (option)
     # 7 21 x 27 ocr-b
     # 8 14 x 25 ocr-a
     # ROMAN.TTF Roman True Type Font
-    text = text.replace('"', '\\"')
+    text = text.replace('"', '\\["]')
     comm = "TEXT %d,%d,\"%d\",0,1,1,\"%s\"\n" % (x, y, font, text)
     self.s.write(comm)
 
