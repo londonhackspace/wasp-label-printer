@@ -234,14 +234,23 @@ Environment Temperature over range (option)
   # at the top by default
   # centered
   def title(self, title, font=5, y=5):
-    t_width = self.fonts[5]["width"] * len(title)
-    t_pos = (((101 * 8) - 10) - t_width) / 2
-    self.text(5 + t_pos, y, title, 5)
+    # use font 5, it's nice and big.
+    t_font = 5
+    if len(title) > 24:
+      # too wide, use a smaller font
+      t_font = 4
 
-    return y + self.fonts[5]["height"] * 2
+    if len(title) > 33:
+      # still too wide, use an even smaller font
+      t_font = 3
+
+    t_width = self.fonts[t_font]["width"] * len(title)
+    t_pos = (((101 * 8) - 10) - t_width) / 2
+    self.text(5 + t_pos, y, title, t_font)
+
+    return y + self.fonts[t_font]["height"] * 2
 
   def close(self):
-    print "bye!"
     if self.s.inWaiting() > 0:
       hexdump.hexdump(self.s.read(self.s.inWaiting()))
     self.status()
