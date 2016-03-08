@@ -502,6 +502,30 @@ class lhsStickers:
     y = w.para(text, x, y, 1)
     
     w.s.write("PRINT 1\n")
+
+  def lhs_badge(self, name, things):
+    # A name badge
+    w = self.wasp
+    w.s.write("CLS\n")
+    y = 5
+    x = 5
+    y = w.title("Hello My name is:")
+
+    y = w.title(name, 5, y)
+
+    y = y + 32
+
+    w.text(10, y, "...and you can find me on:", 3)
+    y = y + w.fonts[3]["height"]
+    y = y + w.fonts[3]["height"]
+
+    logging.info(things)
+    logging.info(things.keys())
+    ks = things.keys()
+    ks.sort()
+    for k in ks:
+      y = w.name_value(k, ": " + str(things[k]), 10, y)
+    w.s.write("PRINT 1\n")
     
   def text(self, text):
     w = self.wasp

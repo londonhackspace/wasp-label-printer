@@ -93,10 +93,16 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
           self.end_headers()
           self.wfile.write('Bad request: missing key %s' % k)
           return
+      # the printer only does code page 850
+      # so re-encode all the data just in case
+      for k in data.keys():
+        if type(data[k]) == type(u"string"):
+          data[k] = data[k].encode('cp850', 'replace')
+      return data
 
     if path == "/print/dnh":
       keys = ('storage_id', 'name', 'ownername', 'completion_date', 'max_extention', 'more_info')
-      check_keys(data, keys)
+      data = check_keys(data, keys)
       id = False
       try:
         id = int(data['storage_id'])
@@ -106,56 +112,39 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.wfile.write('Bad request: %s' % e)
         return
 
-      # the printer only does code page 850
-      # so re-encode all the data just in case
-      for k in data.keys():
-        if type(data[k]) == type(u"string"):
-          data[k] = data[k].encode('cp850', 'replace')
         
       # actually print it.
       s.lhs_dnh_new(str(data['storage_id']), data['ownername'], data['name'], data['completion_date'], data['max_extention'], data['more_info'])
       
     elif path == '/print/nod':
       # don't actually need any keys
-      check_keys(data, ('id','name','email'))
-      # the printer only does code page 850
-      # so re-encode all the data just in case
-      for k in data.keys():
-        if type(data[k]) == type(u"string"):
-          data[k] = data[k].encode('cp850', 'replace')
+      data = check_keys(data, ('id','name','email'))
 
       date = time.strftime('%a %d/%m/%y', time.localtime(time.time())).encode('cp850', 'replace')
       s.lhs_nod(date, data['id'], data['name'], data['email'])
 
     elif path == '/print/hackme':
-      check_keys(data, ('donor_name', 'donor_id', 'donor_email', 'dispose_date', 'more_info'))
-      # the printer only does code page 850
-      # so re-encode all the data just in case
-      for k in data.keys():
-        if type(data[k]) == type(u"string"):
-          data[k] = data[k].encode('cp850', 'replace')
-
+      data = check_keys(data, ('donor_name', 'donor_id', 'donor_email', 'dispose_date', 'more_info'))
       s.lhs_hackme(data['donor_id'], data['donor_name'], data['donor_email'], data['dispose_date'], data['more_info'])
       
     elif path == '/print/fixme':
-      check_keys(data, ('name', 'reporter_id', 'reporter_name', 'reporter_email', 'more_info'))
-      # the printer only does code page 850
-      # so re-encode all the data just in case
-      for k in data.keys():
-        if type(data[k]) == type(u"string"):
-          data[k] = data[k].encode('cp850', 'replace')
-
+      data = check_keys(data, ('name', 'reporter_id', 'reporter_name', 'reporter_email', 'more_info'))
       s.lhs_fixme(data['name'], data['reporter_id'], data['reporter_name'], data['reporter_email'], data['more_info'])
 
     elif path == '/print/box':
-      check_keys(data, ('owner_id', 'owner_name'))
-      # the printer only does code page 850
-      # so re-encode all the data just in case
-      for k in data.keys():
-        if type(data[k]) == type(u"string"):
-          data[k] = data[k].encode('cp850', 'replace')
-
+      data = check_keys(data, ('owner_id', 'owner_name'))
       s.lhs_box(data['owner_id'], data['owner_name'])
+
+    elif path == '/print/badge':
+      data = check_keys(data, ('name', 'items'))
+
+      things = data['items']
+      # cp850 the individual contact items
+      for k in things.keys():
+        if type(things[k]) == type(u"string"):
+          things[k] = things[k].encode('cp850', 'replace')
+
+      s.lhs_badge(data['name'], things)
 
     else:
       self.send_error(404)
