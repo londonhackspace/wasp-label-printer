@@ -139,10 +139,11 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
       data = check_keys(data, ('name', 'items'))
 
       things = data['items']
-      # cp850 the individual contact items
-      for k in things.keys():
-        if type(things[k]) == type(u"string"):
-          things[k] = things[k].encode('cp850', 'replace')
+      if len(things) > 0:
+        # cp850 the individual contact items
+        for k in things.keys():
+          if type(things[k]) == type(u"string"):
+            things[k] = things[k].encode('cp850', 'replace')
 
       s.lhs_badge(data['name'], things)
 

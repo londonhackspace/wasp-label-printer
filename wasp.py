@@ -515,16 +515,16 @@ class lhsStickers:
 
     y = y + 32
 
-    w.text(10, y, "...and you can find me on:", 3)
-    y = y + w.fonts[3]["height"]
-    y = y + w.fonts[3]["height"]
+    if len(things) > 0:
+      w.text(10, y, "...and you can find me on:", 3)
+      y = y + w.fonts[3]["height"]
+      y = y + w.fonts[3]["height"]
 
-    logging.info(things)
-    logging.info(things.keys())
-    ks = things.keys()
-    ks.sort()
-    for k in ks:
-      y = w.name_value(k, ": " + str(things[k]), 10, y)
+      ks = things.keys()
+      ks.sort()
+      for k in ks:
+        y = w.name_value(k, ": " + str(things[k]), 10, y)
+
     w.s.write("PRINT 1\n")
     
   def text(self, text):
