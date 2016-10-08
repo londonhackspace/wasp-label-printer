@@ -28,10 +28,16 @@ class wasp:
       7 : {"width": 21, "height": 27}, # ocr-b, ugly with wide spacing.
       8 : {"width": 14, "height": 25}, # ocr-a
     }
+
+    # label size, 4in x 6in
+    # units here are mm
+    self.label_width = 101 # actually less cos we start at 5,5
+    self.label_height = 152
+
     # was 27 for the old stickers.
     # 45 for font 3
     self.width_in_chars = {
-    1: ((101 * 8) + 10) / self.fonts[1]["width"],
+    1: ((self.label_width * 8) + 10) / self.fonts[1]["width"],
     2: 59,
     3: 45,
     6: 52,
@@ -39,6 +45,7 @@ class wasp:
     #
     # 8 dots per mm at 200dpi
     # we are at 200dpi, dunno if setting or printer model specific
+    
   
   def setup(self):
     # starts at 9600 8 n 1
@@ -92,25 +99,26 @@ CLS
   def status(self):
     self.s.write('\x1b!?')
     r = ord(self.s.read(1))
-    print "%x : %s" % (r, hexdump.tobin(r))
-    sbits = """
-0
-1
-2
-3
-4
-5
-6
-7
-Head opened
-Paper jam
-Out of paper
-Out of ribbon
-Pause
-Printing
-Cover opened (option)
-Environment Temperature over range (option)
-"""
+    bits = hexdump.tobin(r)
+    print "%x : %s" % (r, bits)
+    sbits = (
+"Head opened",
+"Paper jam",
+"Out of paper",
+"Out of ribbon",
+"Pause",
+"Printing",
+"Cover opened (option)",
+"Environment Temperature over range (option)",
+)
+    for i,b in enumerate(bits):
+      i = abs(i - 7)
+      if b == '1':
+        print sbits[i]
+    # the other extended status
+    self.s.write('\x1b!S')
+    r = self.s.read(8)
+    hexdump.hexdump(r)
 
   def list_files(self):
     s = self.s
@@ -214,6 +222,7 @@ Environment Temperature over range (option)
     y = y + self.fonts[font]["height"]
     self.s.write("BAR %d,%d,%d,1\n" % (x, y, self.fonts[font]["width"] * len(name)))
     y = y + 5
+    y = y + self.fonts[font]["height"]
     
     wrapper = textwrap.TextWrapper(width=self.width_in_chars[font], expand_tabs=False)
     tbits = wrapper.wrap(para)
@@ -248,7 +257,7 @@ Environment Temperature over range (option)
       t_font = 3
 
     t_width = self.fonts[t_font]["width"] * len(title)
-    t_pos = (((101 * 8) - 10) - t_width) / 2
+    t_pos = (((self.label_width * 8) - 10) - t_width) / 2
     self.text(5 + t_pos, y, title, t_font)
 
     return y + self.fonts[t_font]["height"] * 2
@@ -320,7 +329,7 @@ class lhsStickers:
 
     # in dots
     t_width = w.fonts[5]["width"] * len(title)
-    t_pos = (((101 * 8) - 10) - t_width) / 2
+    t_pos = (((self.label_width * 8) - 10) - t_width) / 2
     w.text(5 + t_pos, y, title, 5)
 
     y += w.fonts[5]["height"] + 5
@@ -342,7 +351,7 @@ class lhsStickers:
     y += width + 5
 
     y = w.name_value("Estimated Completion Date:", completion, 5, y)
-    y = w.name_value("Tell us more about it:", more, 5, y)
+    y = w.name_para("Tell us more about it:", more, 5, y)
     
     w.s.write("PRINT 1\n")
 
@@ -418,10 +427,13 @@ class lhsStickers:
 
     y = w.para("Date this sticker was applied: " + date, x, y, 2)
     y = y - w.fonts[3]["height"]
+    y += 5
     y = w.name_value("Stuck by: ", name, x, y, 2)
     y = y - w.fonts[2]["height"]
+    y += 5
     y = w.name_value("Email: ", email, 5, y, 2)
     y = y - w.fonts[2]["height"]
+    y += 5
 
     # profile url
     profile = self.profile_url(id)
@@ -429,7 +441,7 @@ class lhsStickers:
     oy = y
     w.qr_code(profile_qr, 5, y)
     width = w.qr_width(profile_qr)
-    y += width + 10
+    y += width + 20
 
     w.qr_code(w.email_to_qr(email), 5 + width + 10, oy)
     width = w.qr_width(w.email_to_qr(email))
@@ -499,8 +511,8 @@ class lhsStickers:
     text = ("This is a London Hackspace Members box sticker, it is not a valid Do Not Hack sticker.")
     x = 5
     # we want this at the bottom
-    lines_per_sticker = (101 * 8) / w.fonts[1]["height"]
-    lines_per_sticker = lines_per_sticker - 4 # should be 2, but be a bit generous
+    lines_per_sticker = (w.label_height * 8) / w.fonts[1]["height"]
+    lines_per_sticker = lines_per_sticker - 6 # should be 2, but be a bit generous
     y = lines_per_sticker * w.fonts[1]["height"]
     y = w.para(text, x, y, 1)
     
@@ -564,7 +576,7 @@ class lhsStickers:
     qrwidth = w.qr_width(qrtext)
     
     # do something with font size to get right text width
-    total_width = (101 * 8) - 10 # 101mm * 8 dots per mm, - 5dots at the edges
+    total_width = (w.label_width * 8) - 10 # width * 8 dots per mm, - 5dots at the edges
     text_space = total_width - (qrwidth + 5)
     text_width = text_space / 21 # for font 7, 21 dots wide
     wrapper = textwrap.TextWrapper(width=self.text_width, expand_tabs=False)
@@ -647,6 +659,7 @@ if __name__ == "__main__":
   elif args.lhs:
     s.lhs(args.lhs[0])
   elif args.lhs_dnh:
+    lhs_dnh = args.lhs_dnh
     s.lhs_dnh(lhs_dnh[0], lhs_dnh[1], lhs_dnh[2], lhs_dnh[3], lhs_dnh[4])
   elif args.text:
     s.text(args.text[0])
