@@ -56,10 +56,13 @@ class wasp:
     # COUNTRY 044
     # CODEPAGE BRI
 
+    # was 101 mm x 101 mm (4in x 4in)
+    # now 101 mm x 152 mm (4in x 6in)
+
     init = """SET CUTTER BATCH
 SET GAP 8
 SET RIBBON OFF
-SIZE 101 mm, 101 mm
+SIZE 101 mm, 152 mm
 GAP 4 mm,0
 SPEED 2
 DENSITY 7
