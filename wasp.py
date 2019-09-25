@@ -201,7 +201,7 @@ CLS
     # ROMAN.TTF Roman True Type Font
     text = text.replace('"', '\\["]')
     comm = "TEXT %d,%d,\"%d\",0,1,1,\"%s\"\n" % (x, y, font, text)
-    self.s.write(comm)
+    self.s.write(comm).encode("utf-8")
 
   def name_value(self, name, value, x, y, font = 3):
     # prints
